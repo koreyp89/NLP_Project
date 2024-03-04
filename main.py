@@ -142,7 +142,17 @@ def get_clean_files():
             out.write(sent + '\n') # write each sentence to a new line
 
 def tf():
-    pass
+    list_of_tf_dicts = []
+    for file in os.listdir('clean'):
+        f = open(os.path.join('clean/', file))
+        text = f.read()
+        punc = '''!()-[]{};:'"\,<>./?@#$%^&*_~''' # punctuation string
+
+        for character in text:
+            if character in punc:
+                text = text.replace(character, "") # remove the punctuation
+
+
 
 
 
