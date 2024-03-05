@@ -1,10 +1,10 @@
 import math
 import re
+import pickle
 from nltk.corpus import stopwords
 import nltk.corpus
 import requests.compat
 import requests
-import random
 import os
 from bs4 import BeautifulSoup
 from nltk import sent_tokenize
@@ -213,20 +213,44 @@ def tf_idf(tfs, idf):
     return list
 
 def build_kb():
-    last_used_term = 'random'
+
+    kb = {}
+    for word in important_words:
+        kb[word] = []
+    kb['random'] = []
+    pickleplace = open('kb.pickle', 'wb')
     for file in os.listdir('clean'):
-        f = open()
+        last_used_term = 'random'
+        f = open(os.path.join('clean/', file))
+        lines = f.readlines()
+        stopwors = stopwords.words('english')
+        for line in lines:
+            inserted = False
+            tokens = word_tokenize(line)
+            tokens = [w.lower() for w in tokens if
+                      w.isalpha() and w not in stopwors]  # remove the stopwords and punctuation
+            for word in important_words:
+                if word in tokens:
+                    kb[word].append(line)
+                    last_used_term = word
+            if not inserted:
+                kb[last_used_term].append(line)
+    pickle.dump(kb, pickleplace)
+
+
 
 
 
 def run():
     #get_links(urls, headers)
     #get_clean_files()
-    #tf_dictionaries, vocab = tf()
-    #idf_dict = idf(vocab, tf_dictionaries)
-    #tf_id = tf_idf(tf_dictionaries, idf_dict)
-    #print('The top 40 tf_idf terms for all documents are:')
-    #print(tf_id[:40])
+    tf_dictionaries, vocab = tf()
+    vocabpickle = open('vocab.pickle','wb')
+    pickle.dump(vocab, vocabpickle)
+    idf_dict = idf(vocab, tf_dictionaries)
+    tf_id = tf_idf(tf_dictionaries, idf_dict)
+    print('The top 40 tf_idf terms for all documents are:')
+    print(tf_id[:40])
     build_kb()
 
 if __name__ == "__main__":
