@@ -1,4 +1,7 @@
+import math
 import re
+from nltk.corpus import stopwords
+import nltk.corpus
 import requests.compat
 import requests
 import random
@@ -8,6 +11,8 @@ from nltk import sent_tokenize
 import string
 from nltk.corpus import stopwords
 from nltk import word_tokenize
+
+important_words = ['raskolnikov', 'moscow', 'russia', 'dostoevsky', 'pushkin', 'lent,' 'essays,' 'article', 'tolstoy', 'featuring', 'poet', 'developed', 'papers', 'collections', 'editions']
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'}
@@ -143,28 +148,86 @@ def get_clean_files():
 
 def tf():
     list_of_tf_dicts = []
+    stopwors = stopwords.words('english')
     for file in os.listdir('clean'):
-        f = open(os.path.join('clean/', file))
+        tf_dict = {}
+        f = open(os.path.join('clean/', file), 'r')
         text = f.read()
-        punc = '''!()-[]{};:'"\,<>./?@#$%^&*_~''' # punctuation string
+        tokens = word_tokenize(text)
+        tokens = [w.lower() for w in tokens if w.isalpha() and w not in stopwors] # remove the stopwords and punctuation
 
-        for character in text:
-            if character in punc:
-                text = text.replace(character, "") # remove the punctuation
+        # get term frequencies
+        for t in tokens:
+            if t in tf_dict:
+                tf_dict[t] += 1
+            else:
+                tf_dict[t] = 1
+
+        # normalize the term frequencies
+        for t in tf_dict.keys():
+            tf_dict[t] = tf_dict[t]/len(tokens)
+
+        list_of_tf_dicts.append(tf_dict)
+
+    # make a vocabulary of all the documents
+    vocab = set()
+    for dictionary in list_of_tf_dicts:
+        dict_set = set(dictionary.keys())
+        vocab = vocab.union(dict_set)
+    vocab = sorted(list(vocab))
+
+    return list_of_tf_dicts, vocab # return the frequency dictionaries
+
+def idf(vocab, tf_dicts):
+    idf_dict = {}
+
+    vocab_by_document = [d.keys() for d in tf_dicts]
+
+    for term in vocab:
+        temp = ['x' for voc in vocab_by_document if term in voc]
+        idf_dict[term] = math.log(1+len(tf_dicts)) / (1+len(temp))
+
+    return idf_dict
 
 
+def tf_idf(tfs, idf):
+    list_of_tfidf_dicts = []
+    for tf in tfs:
+        tf_idf = {}
+        for t in tf.keys():
+            tf_idf[t] = tf[t] * idf[t]
+        list_of_tfidf_dicts.append(tf_idf)
 
+    dct = dict()
+    for dic in list_of_tfidf_dicts:
+        for term in dic.keys():
+            if term not in dct:
+                dct[term] = dic[term]
+            else:
+                maximum = max(dct[term], dic[term])
+                dct[term] = maximum
+    list =  sorted(dct, key=dct.get, reverse=True) # sort by the values in reverse
+    see = dict()
+    for term in list[:200]:
+        see[term] = dct[term]
+    return list
 
-
-
+def build_kb():
+    last_used_term = 'random'
+    for file in os.listdir('clean'):
+        f = open()
 
 
 
 def run():
     #get_links(urls, headers)
     #get_clean_files()
-    tf_dictionaries = tf()
-
+    #tf_dictionaries, vocab = tf()
+    #idf_dict = idf(vocab, tf_dictionaries)
+    #tf_id = tf_idf(tf_dictionaries, idf_dict)
+    #print('The top 40 tf_idf terms for all documents are:')
+    #print(tf_id[:40])
+    build_kb()
 
 if __name__ == "__main__":
     run()
